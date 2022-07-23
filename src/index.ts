@@ -1,22 +1,26 @@
 import 'dotenv/config'
 
+import { createObjectCsvWriter } from 'csv-writer'
+import { existsSync } from 'fs'
+import { join } from 'path'
+
 import { args_validation } from './functions/args_validation'
+import { check_device_id } from './functions/check_device_id'
 import * as date_validation from './functions/date_validation'
 import { logger } from './functions/logger'
+import { read_csv } from './functions/read_csv'
 
 process.on('uncaughtException', err => {
-  console.log('xx')
   if (err.stack !== undefined) logger.error(err.stack)
   else logger.error(`${err.name}: ${err.message}`)
   process.exit(1)
 })
 
 const args = args_validation(process.argv.slice(2), logger)
-
 const date = args.date
 
 /* const files_path: string = path.dirname(__filename) */
-// const files_path = '/usr/src/app/files' // Dir where is commissioning_report.csv files
+const files_path = '/workspaces/typescript-backend-sample/files' // Dir where is commissioning_report.csv files
 
 date_validation.check_date_format(date, logger)
 
@@ -24,35 +28,79 @@ date_validation.check_date_format(date, logger)
  * ['2022-01-01', '2022-01-02', '2022-01-03', '2022-01-04', ...]
  */
 const date_range = date_validation.generate_date_range(date)
-console.log(date_range)
+
 ;(async () => {
-  // const mssql = new Mssql()
-  // await mssql.init(target_script, logger)
-  // for (const date of date_range) {
-  //   let check_if_it_has_records_this_day = await mssql.query(
-  //     `
-  //     SELECT TOP 1 DATE_
-  //     FROM ${process.env.CUSTOMER}_${target_script.toUpperCase()}
-  //     WHERE DATE_ = '${date}'
-  //   `,
-  //     date
-  //   )
-  //   if (check_if_it_has_records_this_day['recordset'].length > 0) {
-  //     let msg = `index.ts - ${target_script} - It has already records for day ${date} on `
-  //     msg += `${process.env.CUSTOMER}_${target_script.toUpperCase()} table.`
-  //     logger.error(msg)
-  //     continue
-  //   }
-  //   const csv_file_path = get_filename(date, target_script, files_path)
-  //   if (!existsSync(csv_file_path)) {
-  //     logger.error(
-  //       `index.ts - ${target_script} - ${date}_${target_script}.csv file does not exists`
-  //     )
-  //     continue
-  //   }
-  //   const csv_content = await read_csv(csv_file_path)
-  //   const table_for_bulk = prepare_bulk[target_script](csv_content)
-  //   await mssql.bulk(table_for_bulk, date)
-  // }
-  // mssql.close()
+  const counter: { [key: string]: { points: number; whitelisted: boolean } } = {}
+  const meters_ids: { [key: string]: boolean } = {}
+
+  for (const d of date_range) {
+    const csv_file_path = join(files_path, `${d}_success_reading_rate_tou.csv`)
+
+    if (!existsSync(csv_file_path)) {
+      logger.error(`${d}_success_reading_rate_tou.csv file does not exists`)
+      continue
+    }
+
+    if (d != '2022-07-15') console.log(d)
+
+    const csv_content = await read_csv(csv_file_path)
+
+    let i = csv_content.length
+
+    while (i--) {
+      console.log(d)
+      const row = csv_content[i]
+
+      const meter_id = row['METER_ID']
+      const success_rate = row['SUCCESS_RATE'].trim()
+      const whitelisted = row['WHITELISTED'].toLowerCase() == 'yes' ? true : false
+
+      const res_check_device_id: string | boolean = check_device_id(meter_id)
+      if (res_check_device_id === false) continue
+      if (meters_ids[res_check_device_id as string] !== undefined) continue
+      meters_ids[res_check_device_id as string] = true
+
+      let point: number
+      if (success_rate != '0.0') point = 1
+      else point = 0
+
+      if (counter[meter_id] === undefined)
+        counter[meter_id] = { points: point, whitelisted: whitelisted }
+      else {
+        const x = counter[meter_id].points + point
+        counter[meter_id] = { points: x, whitelisted: whitelisted }
+      }
+    }
+  }
+
+  const records = []
+
+  for (const [k, v] of Object.entries(counter)) {
+    const meter_id = k
+    const total = v.points
+    console.log(k, v)
+    const avg_ssr = Math.round((total / 6) * 100).toFixed(2)
+    const whitelisted = v.whitelisted
+
+    records.push({
+      meter_id: meter_id,
+      avg_ssr: avg_ssr,
+      total: total,
+      whitelisted: whitelisted
+    })
+  }
+
+  const csvWriter = createObjectCsvWriter({
+    path: join(files_path, `TESTE.csv`),
+    header: [
+      { id: 'meter_id', title: 'METER_ID' },
+      { id: 'avg_ssr', title: 'AVG_SSR' },
+      { id: 'total', title: 'TOTAL' },
+      { id: 'whitelisted', title: 'WHITELISTED' }
+    ]
+  })
+
+  await csvWriter.writeRecords(records)
+
+  // console.log(count)
 })()

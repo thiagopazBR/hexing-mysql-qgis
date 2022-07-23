@@ -13,14 +13,14 @@ export const check_date_format = (d: string, logger: Logger, date_format = 'YYYY
  * @param endDate The end date
  */
 export const generate_date_range = (startDate: string, date_format = 'YYYY-MM-DD'): string[] => {
-  const fromDate = moment(startDate).subtract(7, 'days')
-  const toDate = moment(fromDate).subtract(1, 'days')
+  const fromDate = moment(startDate).subtract(6, 'days')
+  const toDate = moment(startDate).subtract(1, 'days')
   const diff = toDate.diff(fromDate, 'days') + 1
 
   const range: Array<string> = []
 
   for (let i = 0; i < diff; i++) {
-    const d = <string>moment(startDate).add(i, 'days').format(date_format)
+    const d = <string>moment(fromDate).add(i, 'days').format(date_format)
     range.push(d)
   }
 
