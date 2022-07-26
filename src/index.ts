@@ -56,7 +56,7 @@ const date_range = date_validation.generate_date_range(date)
       if (res_check_device_id === false) continue
       if (meters_ids[res_check_device_id as string] !== undefined) continue
       meters_ids[res_check_device_id as string] = true
-      meter_id = res_check_device_id
+      meter_id = res_check_device_id as string
 
       let point: number
       if (success_rate != '0.0') point = 1
