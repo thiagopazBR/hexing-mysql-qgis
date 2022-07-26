@@ -31,7 +31,6 @@ const date_range = date_validation.generate_date_range(date)
 
 ;(async () => {
   const counter: { [key: string]: { points: number; whitelisted: boolean } } = {}
-  const meters_ids: { [key: string]: boolean } = {}
 
   for (const d of date_range) {
     const csv_file_path = join(files_path, `${d}_success_reading_rate_tou.csv`)
@@ -41,17 +40,15 @@ const date_range = date_validation.generate_date_range(date)
       continue
     }
 
-    if (d != '2022-07-15') console.log(d)
+    const meters_ids: { [key: string]: boolean } = {}
 
     const csv_content = await read_csv(csv_file_path)
 
     let i = csv_content.length
-
     while (i--) {
-      console.log(d)
       const row = csv_content[i]
 
-      const meter_id = row['METER_ID']
+      let meter_id = row['METER_ID']
       const success_rate = row['SUCCESS_RATE'].trim()
       const whitelisted = row['WHITELISTED'].toLowerCase() == 'yes' ? true : false
 
@@ -59,17 +56,15 @@ const date_range = date_validation.generate_date_range(date)
       if (res_check_device_id === false) continue
       if (meters_ids[res_check_device_id as string] !== undefined) continue
       meters_ids[res_check_device_id as string] = true
+      meter_id = res_check_device_id
 
       let point: number
       if (success_rate != '0.0') point = 1
       else point = 0
 
-      if (counter[meter_id] === undefined)
-        counter[meter_id] = { points: point, whitelisted: whitelisted }
-      else {
-        const x = counter[meter_id].points + point
-        counter[meter_id] = { points: x, whitelisted: whitelisted }
-      }
+      if (counter[meter_id] !== undefined)
+        counter[meter_id].points = counter[meter_id].points + point
+      else counter[meter_id] = { points: point, whitelisted: whitelisted }
     }
   }
 
@@ -78,7 +73,7 @@ const date_range = date_validation.generate_date_range(date)
   for (const [k, v] of Object.entries(counter)) {
     const meter_id = k
     const total = v.points
-    console.log(k, v)
+
     const avg_ssr = Math.round((total / 6) * 100).toFixed(2)
     const whitelisted = v.whitelisted
 

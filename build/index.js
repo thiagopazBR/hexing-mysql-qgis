@@ -50,19 +50,16 @@ date_validation.check_date_format(date, logger_1.logger);
 const date_range = date_validation.generate_date_range(date);
 (async () => {
     const counter = {};
-    const meters_ids = {};
     for (const d of date_range) {
         const csv_file_path = (0, path_1.join)(files_path, `${d}_success_reading_rate_tou.csv`);
         if (!(0, fs_1.existsSync)(csv_file_path)) {
             logger_1.logger.error(`${d}_success_reading_rate_tou.csv file does not exists`);
             continue;
         }
-        if (d != '2022-07-15')
-            console.log(d);
+        const meters_ids = {};
         const csv_content = await (0, read_csv_1.read_csv)(csv_file_path);
         let i = csv_content.length;
         while (i--) {
-            console.log(d);
             const row = csv_content[i];
             let meter_id = row['METER_ID'];
             const success_rate = row['SUCCESS_RATE'].trim();
@@ -73,24 +70,22 @@ const date_range = date_validation.generate_date_range(date);
             if (meters_ids[res_check_device_id] !== undefined)
                 continue;
             meters_ids[res_check_device_id] = true;
+            meter_id = res_check_device_id;
             let point;
             if (success_rate != '0.0')
                 point = 1;
             else
                 point = 0;
-            if (counter[meter_id] === undefined)
+            if (counter[meter_id] !== undefined)
+                counter[meter_id].points = counter[meter_id].points + point;
+            else
                 counter[meter_id] = { points: point, whitelisted: whitelisted };
-            else {
-                let x = counter[meter_id].points + point;
-                counter[meter_id] = { points: x, whitelisted: whitelisted };
-            }
         }
     }
     const records = [];
     for (const [k, v] of Object.entries(counter)) {
         const meter_id = k;
         const total = v.points;
-        console.log(k, v);
         const avg_ssr = Math.round((total / 6) * 100).toFixed(2);
         const whitelisted = v.whitelisted;
         records.push({
