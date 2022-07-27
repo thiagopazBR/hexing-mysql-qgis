@@ -72,7 +72,7 @@ const date_range = date_validation.generate_date_range(date);
             meters_ids[res_check_device_id] = true;
             meter_id = res_check_device_id;
             let point;
-            if (success_rate != '0.0')
+            if (success_rate && success_rate != '0.0')
                 point = 1;
             else
                 point = 0;
@@ -82,16 +82,43 @@ const date_range = date_validation.generate_date_range(date);
                 counter[meter_id] = { points: point, whitelisted: whitelisted };
         }
     }
+    /* Read installed_field_control.csv file to get city, lat and lng */
+    const csv_file_path = (0, path_1.join)(files_path, `${date}_installed_field_control.csv`);
+    if (!(0, fs_1.existsSync)(csv_file_path)) {
+        logger_1.logger.error(`${date}_installed_field_control.csv file does not exists`);
+        process.exit(1);
+    }
+    const csv_content = await (0, read_csv_1.read_csv)(csv_file_path);
+    let i = csv_content.length;
+    while (i--) {
+        const row = csv_content[i];
+        let meter_id = row['METER'];
+        const latitude = row['LAT'];
+        const longitude = row['LONG'];
+        const city = row['City'];
+        // if (! check_latitude(latitude) || ! check_longitude(longitude) ) continue
+        if (counter[meter_id] !== undefined) {
+            counter[meter_id].latitude = latitude;
+            counter[meter_id].longitude = longitude;
+            counter[meter_id].city = city;
+        }
+    }
     const records = [];
     for (const [k, v] of Object.entries(counter)) {
         const meter_id = k;
         const total = v.points;
         const avg_ssr = Math.round((total / 6) * 100).toFixed(2);
+        const latitude = v.latitude;
+        const longitude = v.longitude;
+        const city = v.city;
         const whitelisted = v.whitelisted;
         records.push({
             meter_id: meter_id,
             avg_ssr: avg_ssr,
             total: total,
+            latitude: latitude,
+            longitude: longitude,
+            city: city,
             whitelisted: whitelisted
         });
     }
@@ -101,6 +128,9 @@ const date_range = date_validation.generate_date_range(date);
             { id: 'meter_id', title: 'METER_ID' },
             { id: 'avg_ssr', title: 'AVG_SSR' },
             { id: 'total', title: 'TOTAL' },
+            { id: 'latitude', title: 'LATITUDE' },
+            { id: 'longitude', title: 'LONGITUDE' },
+            { id: 'city', title: 'CITY' },
             { id: 'whitelisted', title: 'WHITELISTED' }
         ]
     });

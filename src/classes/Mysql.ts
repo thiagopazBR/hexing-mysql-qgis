@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert'
 import { Connection, createConnection, QueryError, RowDataPacket } from 'mysql2'
 
-import { IGlpiDataResponse } from '../interfaces/IGlpiDataResponse'
+// import { IGlpiDataResponse } from '../interfaces/IGlpiDataResponse'
 import { IMysqlResponse } from '../interfaces/IMysqlResponse'
 
 assert(process.env.GLPI_DB_HOST, 'GLPI_DB_HOST is invalid or undefined')
@@ -31,34 +31,34 @@ export class Mysql {
     })
   }
 
-  public async get_glpi_data(): Promise<IGlpiDataResponse> {
-    const query = `
-      SELECT
-        p.serial,
-        p.name as peripheral,
-        pl.idrelayfield as idrelay
-      FROM
-        glpi_peripherals as p
-      LEFT JOIN
-        glpi_plugin_fields_peripheraldeviceconfigurations as pl ON pl.items_id = p.id
-      WHERE
-        p.is_deleted != 1
-        AND p.peripheraltypes_id = '3';`
+  // public async get_glpi_data(): Promise<IGlpiDataResponse> {
+  //   const query = `
+  //     SELECT
+  //       p.serial,
+  //       p.name as peripheral,
+  //       pl.idrelayfield as idrelay
+  //     FROM
+  //       glpi_peripherals as p
+  //     LEFT JOIN
+  //       glpi_plugin_fields_peripheraldeviceconfigurations as pl ON pl.items_id = p.id
+  //     WHERE
+  //       p.is_deleted != 1
+  //       AND p.peripheraltypes_id = '3';`
 
-    const result = await this.select(query)
-    const output: IGlpiDataResponse = {}
+  //   const result = await this.select(query)
+  //   const output: IGlpiDataResponse = {}
 
-    for (const r of result.data)
-      if (r.serial) {
-        const relay_serial = r.serial
-        const relay_name = r.peripheral
-        const id_relay = r.idrelay ? r.idrelay : relay_serial
+  //   for (const r of result.data)
+  //     if (r.serial) {
+  //       const relay_serial = r.serial
+  //       const relay_name = r.peripheral
+  //       const id_relay = r.idrelay ? r.idrelay : relay_serial
 
-        output[relay_serial] = { id_relay: id_relay, name: relay_name }
-      }
+  //       output[relay_serial] = { id_relay: id_relay, name: relay_name }
+  //     }
 
-    return Promise.resolve(output)
-  }
+  //   return Promise.resolve(output)
+  // }
 }
 
 // for qr in query_result:
