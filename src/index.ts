@@ -97,9 +97,9 @@ const mysql = new Mysql()
     latitude = check_latitude(latitude)
     longitude = check_longitude(longitude)
 
-    if (latitude == 'NULL' || longitude == 'NULL') {
-      latitude = 'NULL'
-      longitude = 'NULL'
+    if (latitude == '0' || longitude == '90') {
+      latitude = '0'
+      longitude = '90'
     }
 
     if (counter[meter_id] !== undefined) {
@@ -110,7 +110,7 @@ const mysql = new Mysql()
   }
 
   const records = []
-  const bulk_data = []
+  // const bulk_data = []
 
   for (const [k, v] of Object.entries(counter)) {
     const meter_id = k
@@ -118,21 +118,21 @@ const mysql = new Mysql()
     const total = v.points
     const avg_ssr = Math.round((total / 6) * 100)
 
-    const latitude = v.latitude
-    const longitude = v.longitude
-    const city = v.city
+    const latitude = v.latitude || '0'
+    const longitude = v.longitude || '90'
+    const city = v.city ? v.city.replace("'", "\\'") : 'NULL'
 
     records.push({
-      date_: date,
-      meter_id: meter_id,
       avg_ssr: avg_ssr,
-      total: total,
+      city: city,
+      date_: date,
       latitude: latitude,
       longitude: longitude,
-      city: city
+      meter_id: meter_id,
+      total: total
     })
 
-    bulk_data.push([date, meter_id, avg_ssr, total, latitude, longitude, city])
+    // bulk_data.push([date, meter_id, avg_ssr, total, latitude, longitude, city])
   }
 
   const csvWriter = createObjectCsvWriter({
@@ -150,6 +150,6 @@ const mysql = new Mysql()
 
   await csvWriter.writeRecords(records)
 
-  await mysql.bulk(bulk_data)
+  await mysql.bulk(records)
   // console.log(count)
 })()

@@ -19,9 +19,9 @@ export class Mysql {
     })
   }
 
-  public query(query: string, values?: (string | number)[][]): Promise<IMysqlResponse> {
+  public query(query: string): Promise<IMysqlResponse> {
     return new Promise((resolve, reject) => {
-      this.connection.query(query, [values], (err: MysqlError, rows: []) => {
+      this.connection.query(query, (err: MysqlError, rows: []) => {
         if (err) {
           console.log(err)
           reject({ error: err })
@@ -37,30 +37,38 @@ export class Mysql {
     await this.query(`ALTER TABLE ${table_name} AUTO_INCREMENT = 1`)
   }
 
-  public async bulk(data: (string | number)[][]) {
+  public async bulk(data: any) {
     const table_name = 'meters_srr_avg'
 
     this.clear_table(table_name)
     const insert_prefix: string =
       'INSERT INTO `' +
       table_name +
-      '` (DATE_, METER_ID, AVG_SSR, TOTAL, LATITUDE, LONGITUDE, CITY) VALUES ? '
+      '` (DATE_, METER_ID, AVG_SSR, TOTAL, LATITUDE, LONGITUDE, CITY, PONTOS) VALUES '
 
     let i = 0
     let buff = []
 
+    let xx = insert_prefix
+
     for (const line of data) {
+      xx = xx.concat(
+        ` ('${line.date_}', ${line.meter_id}, ${line.avg_ssr}, ${line.total}, '${line.latitude}', '${line.longitude}', '${line.city}', ST_SRID(point(${line.longitude} , ${line.latitude}), 4326)),`
+      )
       buff.push(line)
       i++
       if (buff.length % 2000 === 0) {
-        await this.query(insert_prefix, buff)
+        xx = xx.replace(/,$/, '')
+        await this.query(xx)
         console.log(i)
         buff = []
+        xx = insert_prefix
       }
     }
 
     if (buff.length > 0) {
-      await this.query(insert_prefix, buff)
+      xx = xx.replace(/,$/, '')
+      await this.query(xx)
       console.log(i)
     }
   }
