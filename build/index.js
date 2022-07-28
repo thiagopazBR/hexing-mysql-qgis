@@ -32,6 +32,8 @@ const check_device_id_1 = require("./functions/check_device_id");
 const date_validation = __importStar(require("./functions/date_validation"));
 const logger_1 = require("./functions/logger");
 const read_csv_1 = require("./functions/read_csv");
+const lat_long_validation_1 = require("./functions/lat_long_validation");
+const Mysql_1 = require("./classes/Mysql");
 process.on('uncaughtException', err => {
     if (err.stack !== undefined)
         logger_1.logger.error(err.stack);
@@ -48,6 +50,7 @@ date_validation.check_date_format(date, logger_1.logger);
  * ['2022-01-01', '2022-01-02', '2022-01-03', '2022-01-04', ...]
  */
 const date_range = date_validation.generate_date_range(date);
+const mysql = new Mysql_1.Mysql();
 (async () => {
     const counter = {};
     for (const d of date_range) {
@@ -64,6 +67,8 @@ const date_range = date_validation.generate_date_range(date);
             let meter_id = row['METER_ID'];
             const success_rate = row['SUCCESS_RATE'].trim();
             const whitelisted = row['WHITELISTED'].toLowerCase() == 'yes' ? true : false;
+            if (!whitelisted)
+                continue;
             const res_check_device_id = (0, check_device_id_1.check_device_id)(meter_id);
             if (res_check_device_id === false)
                 continue;
@@ -79,7 +84,7 @@ const date_range = date_validation.generate_date_range(date);
             if (counter[meter_id] !== undefined)
                 counter[meter_id].points = counter[meter_id].points + point;
             else
-                counter[meter_id] = { points: point, whitelisted: whitelisted };
+                counter[meter_id] = { points: point };
         }
     }
     /* Read installed_field_control.csv file to get city, lat and lng */
@@ -92,11 +97,16 @@ const date_range = date_validation.generate_date_range(date);
     let i = csv_content.length;
     while (i--) {
         const row = csv_content[i];
-        let meter_id = row['METER'];
-        const latitude = row['LAT'];
-        const longitude = row['LONG'];
+        const meter_id = row['METER'];
+        let latitude = row['LAT'];
+        let longitude = row['LONG'];
         const city = row['City'];
-        // if (! check_latitude(latitude) || ! check_longitude(longitude) ) continue
+        latitude = (0, lat_long_validation_1.check_latitude)(latitude);
+        longitude = (0, lat_long_validation_1.check_longitude)(longitude);
+        if (latitude == 'NULL' || longitude == 'NULL') {
+            latitude = 'NULL';
+            longitude = 'NULL';
+        }
         if (counter[meter_id] !== undefined) {
             counter[meter_id].latitude = latitude;
             counter[meter_id].longitude = longitude;
@@ -104,37 +114,39 @@ const date_range = date_validation.generate_date_range(date);
         }
     }
     const records = [];
+    const bulk_data = [];
     for (const [k, v] of Object.entries(counter)) {
         const meter_id = k;
         const total = v.points;
-        const avg_ssr = Math.round((total / 6) * 100).toFixed(2);
+        const avg_ssr = Math.round((total / 6) * 100);
         const latitude = v.latitude;
         const longitude = v.longitude;
         const city = v.city;
-        const whitelisted = v.whitelisted;
         records.push({
+            date_: date,
             meter_id: meter_id,
             avg_ssr: avg_ssr,
             total: total,
             latitude: latitude,
             longitude: longitude,
-            city: city,
-            whitelisted: whitelisted
+            city: city
         });
+        bulk_data.push([date, meter_id, avg_ssr, total, latitude, longitude, city]);
     }
     const csvWriter = (0, csv_writer_1.createObjectCsvWriter)({
         path: (0, path_1.join)(files_path, `TESTE.csv`),
         header: [
+            { id: 'date_', title: 'DATE_' },
             { id: 'meter_id', title: 'METER_ID' },
             { id: 'avg_ssr', title: 'AVG_SSR' },
             { id: 'total', title: 'TOTAL' },
             { id: 'latitude', title: 'LATITUDE' },
             { id: 'longitude', title: 'LONGITUDE' },
-            { id: 'city', title: 'CITY' },
-            { id: 'whitelisted', title: 'WHITELISTED' }
+            { id: 'city', title: 'CITY' }
         ]
     });
     await csvWriter.writeRecords(records);
+    await mysql.bulk(bulk_data);
     // console.log(count)
 })();
 //# sourceMappingURL=index.js.map

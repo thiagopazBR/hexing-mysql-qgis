@@ -1,10 +1,10 @@
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
-      MYSQL_DB_HOST: string
-      MYSQL_DB_NAME: string
-      MYSQL_DB_USER: string
-      MYSQL_DB_PASS: string
+      DB_HOST: string
+      DB_NAME: string
+      DB_USER: string
+      DB_PASS: string
     }
   }
 }

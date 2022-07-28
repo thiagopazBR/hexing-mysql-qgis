@@ -11,7 +11,8 @@ FROM base as production
 ENV NODE_ENV=production
 RUN npm install --production
 
-CMD ["npm", "start"]
+CMD ["-c", "echo Container started\ntrap \"exit 0\" 15\n\nexec \"$@\"\nwhile sleep 1 & wait $!; do :; done", "-"]
+ENTRYPOINT ["/bin/sh"],
 
 
 FROM base as dev

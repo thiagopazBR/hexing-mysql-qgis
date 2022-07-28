@@ -1,70 +1,86 @@
 import { strict as assert } from 'assert'
-import { Connection, createConnection, QueryError, RowDataPacket } from 'mysql2'
-
-// import { IGlpiDataResponse } from '../interfaces/IGlpiDataResponse'
+import { Connection, createConnection, MysqlError } from 'mysql'
 import { IMysqlResponse } from '../interfaces/IMysqlResponse'
 
-assert(process.env.GLPI_DB_HOST, 'GLPI_DB_HOST is invalid or undefined')
-assert(process.env.GLPI_DB_NAME, 'GLPI_DB_NAME is invalid or undefined')
-assert(process.env.GLPI_DB_USER, 'GLPI_DB_USER is invalid or undefined')
-assert(process.env.GLPI_DB_PASS, 'GLPI_DB_PASS is invalid or undefined')
+assert(process.env.DB_HOST, 'DB_HOST is invalid or undefined')
+assert(process.env.DB_NAME, 'DB_NAME is invalid or undefined')
+assert(process.env.DB_USER, 'DB_USER is invalid or undefined')
+assert(process.env.DB_PASS, 'DB_PASS is invalid or undefined')
 
 export class Mysql {
   connection: Connection
 
   constructor() {
     this.connection = createConnection({
-      database: process.env.GLPI_DB_NAME,
-      host: process.env.GLPI_DB_HOST,
-      password: process.env.GLPI_DB_PASS,
-      user: process.env.GLPI_DB_USER
+      database: process.env.DB_NAME,
+      host: process.env.DB_HOST,
+      password: process.env.DB_PASS,
+      user: process.env.DB_USER
     })
   }
 
-  public select(query: string): Promise<IMysqlResponse> {
+  public query(query: string, values?: (string | number)[][]): Promise<IMysqlResponse> {
     return new Promise((resolve, reject) => {
-      this.connection.query(query, (err: QueryError, rows: RowDataPacket[]) => {
-        if (err) reject({ error: err })
+      this.connection.query(query, [values], (err: MysqlError, rows: []) => {
+        if (err) {
+          console.log(err)
+          reject({ error: err })
+        }
 
         resolve({ data: rows })
       })
     })
   }
 
-  // public async get_glpi_data(): Promise<IGlpiDataResponse> {
-  //   const query = `
-  //     SELECT
-  //       p.serial,
-  //       p.name as peripheral,
-  //       pl.idrelayfield as idrelay
-  //     FROM
-  //       glpi_peripherals as p
-  //     LEFT JOIN
-  //       glpi_plugin_fields_peripheraldeviceconfigurations as pl ON pl.items_id = p.id
-  //     WHERE
-  //       p.is_deleted != 1
-  //       AND p.peripheraltypes_id = '3';`
+  private async clear_table(table_name: string): Promise<void> {
+    await this.query(`DELETE FROM ${table_name}`)
+    await this.query(`ALTER TABLE ${table_name} AUTO_INCREMENT = 1`)
+  }
 
-  //   const result = await this.select(query)
-  //   const output: IGlpiDataResponse = {}
+  public async bulk(data: (string | number)[][]) {
+    const table_name = 'meters_srr_avg'
 
-  //   for (const r of result.data)
-  //     if (r.serial) {
-  //       const relay_serial = r.serial
-  //       const relay_name = r.peripheral
-  //       const id_relay = r.idrelay ? r.idrelay : relay_serial
+    this.clear_table(table_name)
+    const insert_prefix: string =
+      'INSERT INTO `' +
+      table_name +
+      '` (DATE_, METER_ID, AVG_SSR, TOTAL, LATITUDE, LONGITUDE, CITY) VALUES ? '
 
-  //       output[relay_serial] = { id_relay: id_relay, name: relay_name }
-  //     }
+    let i = 0
+    let buff = []
 
-  //   return Promise.resolve(output)
-  // }
+    for (const line of data) {
+      buff.push(line)
+      i++
+      if (buff.length % 2000 === 0) {
+        await this.query(insert_prefix, buff)
+        console.log(i)
+        buff = []
+      }
+    }
+
+    if (buff.length > 0) {
+      await this.query(insert_prefix, buff)
+      console.log(i)
+    }
+  }
+
+  // console.log('end');
+  // connection.close();
 }
 
-// for qr in query_result:
-//         if qr['serial'] != None:
-//             relay_serial = qr['serial']
-//             relay_name =  qr['peripheral']
-//             id_relay = qr['idrelay'] if qr['idrelay'] else relay_serial
+// run()
+// font: https://stackoverflow.com/questions/8899802/how-do-i-do-a-bulk-insert-in-mysql-using-node-js
 
-//             output[relay_serial] = {"name": relay_name, "id_relay": id_relay }
+/*
+CREATE TABLE METERS_QGIS (
+  ID INT NOT NULL IDENTITY PRIMARY KEY,
+  DATE_ DATE,
+  METER_ID INT NOT NULL,
+  AVG_SSR TINYINT,
+  TOTAL TINYINT,
+  LATITUDE DECIMAL(10, 8),
+  LONGITUDE DECIMAL(11, 8),
+  CITY varchar(100)
+)
+*/

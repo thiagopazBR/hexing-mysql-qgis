@@ -1,6 +1,5 @@
 type Data = {
   points: number
-  whitelisted: boolean
   latitude?: string
   longitude?: string
   city?: string
