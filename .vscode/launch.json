@@ -12,7 +12,8 @@
       "program": "${workspaceFolder}/build/index.js",
       // "preLaunchTask": "tsc: build - tsconfig.json",
       "outFiles": ["${workspaceFolder}/build/**/*.js"],
-      "internalConsoleOptions": "openOnSessionStart"
+      "internalConsoleOptions": "openOnSessionStart",
+      "args": []
     }
   ]
 }

@@ -13,8 +13,7 @@
       "label": "tsc: watch - tsconfig.json",
       "runOptions": {
         "runOn": "folderOpen"
-      },
-      "args": []
+      }
     }
   ]
 }
