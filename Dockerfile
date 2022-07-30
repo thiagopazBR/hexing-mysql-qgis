@@ -4,6 +4,8 @@
 ##########################################################################
 FROM node:lts as builder
 
+ENV DEBIAN_FRONTEND noninteractive
+
 # Create app directory
 WORKDIR /usr/src/app
 
