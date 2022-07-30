@@ -17,7 +17,7 @@ const args = args_validation(process.argv.slice(2), logger)
 const date = args.date
 
 /* const files_path: string = path.dirname(__filename) */
-const files_path = '/workspaces/typescript-backend-sample/files' // Dir where is commissioning_report.csv files
+const files_path = '/usr/src/app/files' // Dir where is commissioning_report.csv files
 
 date_validation.check_date_format(date, logger)
 

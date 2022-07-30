@@ -37,7 +37,7 @@ const read_csv_1 = require("./functions/read_csv");
 const args = (0, args_validation_1.args_validation)(process.argv.slice(2), logger_1.logger);
 const date = args.date;
 /* const files_path: string = path.dirname(__filename) */
-const files_path = '/workspaces/typescript-backend-sample/files'; // Dir where is commissioning_report.csv files
+const files_path = '/usr/src/app/files'; // Dir where is commissioning_report.csv files
 date_validation.check_date_format(date, logger_1.logger);
 /*
  * ['2022-01-01', '2022-01-02', '2022-01-03', '2022-01-04', ...]
