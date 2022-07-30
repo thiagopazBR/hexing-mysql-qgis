@@ -3,6 +3,7 @@
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "rvest.vs-code-prettier-eslint",
-    "mike-co.import-sorter"
+    "mike-co.import-sorter",
+    "eamodio.gitlens"
   ]
 }

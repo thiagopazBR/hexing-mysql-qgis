@@ -21,9 +21,10 @@
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 	  "dbaeumer.vscode-eslint",
-    	  "esbenp.prettier-vscode",
-    	  "rvest.vs-code-prettier-eslint",
-    	  "mike-co.import-sorter"
+    "esbenp.prettier-vscode",
+    "rvest.vs-code-prettier-eslint",
+    "mike-co.import-sorter",
+		"eamodio.gitlens"
 	]
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
