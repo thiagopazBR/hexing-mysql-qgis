@@ -1,5 +1,7 @@
 import { strict as assert } from 'assert'
 import { Connection, createConnection, MysqlError } from 'mysql'
+
+import { ICsvData } from '../interfaces/ICsvData'
 import { IMysqlResponse } from '../interfaces/IMysqlResponse'
 
 assert(process.env.DB_HOST, 'DB_HOST is invalid or undefined')
@@ -37,7 +39,7 @@ export class Mysql {
     await this.query(`ALTER TABLE ${table_name} AUTO_INCREMENT = 1`)
   }
 
-  public async bulk(data: any) {
+  public async bulk(data: ICsvData[]) {
     const table_name = 'meters_srr_avg'
 
     this.clear_table(table_name)

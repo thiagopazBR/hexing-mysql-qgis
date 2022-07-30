@@ -27,20 +27,13 @@ require("dotenv/config");
 const csv_writer_1 = require("csv-writer");
 const fs_1 = require("fs");
 const path_1 = require("path");
+const Mysql_1 = require("./classes/Mysql");
 const args_validation_1 = require("./functions/args_validation");
 const check_device_id_1 = require("./functions/check_device_id");
 const date_validation = __importStar(require("./functions/date_validation"));
+const lat_long_validation_1 = require("./functions/lat_long_validation");
 const logger_1 = require("./functions/logger");
 const read_csv_1 = require("./functions/read_csv");
-const lat_long_validation_1 = require("./functions/lat_long_validation");
-const Mysql_1 = require("./classes/Mysql");
-process.on('uncaughtException', err => {
-    if (err.stack !== undefined)
-        logger_1.logger.error(err.stack);
-    else
-        logger_1.logger.error(`${err.name}: ${err.message}`);
-    process.exit(1);
-});
 const args = (0, args_validation_1.args_validation)(process.argv.slice(2), logger_1.logger);
 const date = args.date;
 /* const files_path: string = path.dirname(__filename) */
@@ -123,18 +116,17 @@ const mysql = new Mysql_1.Mysql();
         const longitude = v.longitude || '90';
         const city = v.city ? v.city.replace("'", "\\'") : 'NULL';
         records.push({
-            avg_ssr: avg_ssr,
+            avg_ssr: avg_ssr.toString(),
             city: city,
             date_: date,
             latitude: latitude,
             longitude: longitude,
-            meter_id: meter_id,
-            total: total
+            meter_id: meter_id.toString(),
+            total: total.toString()
         });
         // bulk_data.push([date, meter_id, avg_ssr, total, latitude, longitude, city])
     }
     const csvWriter = (0, csv_writer_1.createObjectCsvWriter)({
-        path: (0, path_1.join)(files_path, `TESTE.csv`),
         header: [
             { id: 'date_', title: 'DATE_' },
             { id: 'meter_id', title: 'METER_ID' },
@@ -143,7 +135,8 @@ const mysql = new Mysql_1.Mysql();
             { id: 'latitude', title: 'LATITUDE' },
             { id: 'longitude', title: 'LONGITUDE' },
             { id: 'city', title: 'CITY' }
-        ]
+        ],
+        path: (0, path_1.join)(files_path, `TESTE.csv`)
     });
     await csvWriter.writeRecords(records);
     await mysql.bulk(records);

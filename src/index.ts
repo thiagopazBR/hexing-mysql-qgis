@@ -4,20 +4,14 @@ import { createObjectCsvWriter } from 'csv-writer'
 import { existsSync } from 'fs'
 import { join } from 'path'
 
+import { Mysql } from './classes/Mysql'
 import { args_validation } from './functions/args_validation'
 import { check_device_id } from './functions/check_device_id'
 import * as date_validation from './functions/date_validation'
+import { check_latitude, check_longitude } from './functions/lat_long_validation'
 import { logger } from './functions/logger'
 import { read_csv } from './functions/read_csv'
-import { check_latitude, check_longitude } from './functions/lat_long_validation'
 import { IMainOutput } from './interfaces/IMainOutput'
-import { Mysql } from './classes/Mysql'
-
-process.on('uncaughtException', err => {
-  if (err.stack !== undefined) logger.error(err.stack)
-  else logger.error(`${err.name}: ${err.message}`)
-  process.exit(1)
-})
 
 const args = args_validation(process.argv.slice(2), logger)
 const date = args.date
@@ -123,20 +117,19 @@ const mysql = new Mysql()
     const city = v.city ? v.city.replace("'", "\\'") : 'NULL'
 
     records.push({
-      avg_ssr: avg_ssr,
+      avg_ssr: avg_ssr.toString(),
       city: city,
       date_: date,
       latitude: latitude,
       longitude: longitude,
-      meter_id: meter_id,
-      total: total
+      meter_id: meter_id.toString(),
+      total: total.toString()
     })
 
     // bulk_data.push([date, meter_id, avg_ssr, total, latitude, longitude, city])
   }
 
   const csvWriter = createObjectCsvWriter({
-    path: join(files_path, `TESTE.csv`),
     header: [
       { id: 'date_', title: 'DATE_' },
       { id: 'meter_id', title: 'METER_ID' },
@@ -145,7 +138,8 @@ const mysql = new Mysql()
       { id: 'latitude', title: 'LATITUDE' },
       { id: 'longitude', title: 'LONGITUDE' },
       { id: 'city', title: 'CITY' }
-    ]
+    ],
+    path: join(files_path, `TESTE.csv`)
   })
 
   await csvWriter.writeRecords(records)

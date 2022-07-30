@@ -1,6 +1,12 @@
 ##########################################################################
 # First Stage buider                                                     #
-# for dev, please run: docker build --target=builder -t backend-dev:v1 . # 
+# for dev, please run: docker build --target=builder -t backend-dev:v1 . #
+#                                                                        #
+# /usr/bin/docker run \                                                  #
+#  --name <container_name> -t \                                          #
+#  -v <local_project_path>/log:/usr/src/app/log \                        #
+#  -v /usr/share/zabbix/modules/files/content:/usr/src/app/files:ro \    #
+#  -d <image_name>                                                       # 
 ##########################################################################
 FROM node:lts as builder
 
