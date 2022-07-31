@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert'
-import { Connection, createConnection, MysqlError } from 'mysql'
+import { Connection, createConnection, QueryError, RowDataPacket } from 'mysql2'
 
 import { ICsvData } from '../interfaces/ICsvData'
 import { IMysqlResponse } from '../interfaces/IMysqlResponse'
@@ -23,11 +23,8 @@ export class Mysql {
 
   public query(query: string): Promise<IMysqlResponse> {
     return new Promise((resolve, reject) => {
-      this.connection.query(query, (err: MysqlError, rows: []) => {
-        if (err) {
-          console.log(err)
-          reject({ error: err })
-        }
+      this.connection.query(query, (err: QueryError, rows: RowDataPacket[]) => {
+        if (err) reject({ error: err })
 
         resolve({ data: rows })
       })
@@ -36,6 +33,9 @@ export class Mysql {
 
   private async clear_table(table_name: string): Promise<void> {
     await this.query(`DELETE FROM ${table_name}`)
+  }
+
+  private async reset_auto_increment(table_name: string): Promise<void> {
     await this.query(`ALTER TABLE ${table_name} AUTO_INCREMENT = 1`)
   }
 
@@ -43,6 +43,7 @@ export class Mysql {
     const table_name = 'meters_srr_avg'
 
     this.clear_table(table_name)
+    this.reset_auto_increment(table_name)
     const insert_prefix: string =
       'INSERT INTO `' +
       table_name +
